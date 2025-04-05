@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Scrakk</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <!-- Configuración de Firebase -->
+    <script src="js/firebase-config.js"></script>
+    <!-- Protección de autenticación -->
+    <script src="js/auth-guard.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -1327,6 +1335,80 @@
         .notification-btn:hover {
             filter: brightness(1.1);
         }
+
+        .modal-body .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-body label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--color-text-secondary);
+        }
+
+        .modal-body input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+        }
+
+        .modal-body input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--color-accent);
+            border: none;
+            border-radius: var(--radius-md);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            background: var(--color-accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 1rem 2rem;
+            border-radius: var(--radius-md);
+            background: var(--color-success);
+            color: white;
+            transform: translateY(150%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.error {
+            background: var(--color-danger);
+        }
+
+        .notification.show {
+            transform: translateY(0);
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
     </style>
 </head>
 <body>
@@ -1372,13 +1454,14 @@
             </div>
             <div class="user-profile-container">
                 <div class="user-profile" onclick="showModal('userSettingsModal')">
-                    <div class="user-avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
+                    <div class="user-avatar" id="userAvatar"></div>
                     <div class="user-info">
-                        <div class="user-name">Usuario</div>
-                        <div class="user-status">En línea</div>
+                        <span class="user-name" id="userName"></span>
+                        <span class="user-status" id="userStatus"></span>
                     </div>
+                    <button id="logoutButton" class="logout-button">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -1779,6 +1862,36 @@
         <div class="context-menu-item" id="serverSettings">
             <i class="fas fa-cog"></i>
             <span>Ajustes del servidor</span>
+        </div>
+    </div>
+
+    <!-- Modal de Editar Perfil -->
+    <div id="editProfileModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Editar Perfil</h2>
+                <div class="close-modal" onclick="hideModal('editProfileModal')">&times;</div>
+            </div>
+            <div class="modal-body">
+                <form id="editProfileForm">
+                    <div class="form-group">
+                        <label for="editNombre">Nombre</label>
+                        <input type="text" id="editNombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editApellido">Apellido</label>
+                        <input type="text" id="editApellido">
+                    </div>
+                    <div class="form-group">
+                        <label for="editPhotoURL">URL de foto de perfil</label>
+                        <input type="url" id="editPhotoURL" placeholder="https://ejemplo.com/foto.jpg">
+                    </div>
+                    <button type="submit" class="submit-btn">
+                        <i class="fas fa-save"></i>
+                        Guardar Cambios
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -2933,6 +3046,71 @@
             }
         });
         // ... existing code ...
+
+        // Función para mostrar el modal de editar perfil
+        function showEditProfileModal() {
+            const user = authService.getCurrentUser();
+            if (!user) return;
+
+            const modal = document.getElementById('editProfileModal');
+            const nombreInput = document.getElementById('editNombre');
+            const apellidoInput = document.getElementById('editApellido');
+            const photoURLInput = document.getElementById('editPhotoURL');
+
+            // Obtener datos actuales del usuario
+            const nombreCompleto = user.displayName ? user.displayName.split(' ') : ['', ''];
+            nombreInput.value = nombreCompleto[0] || '';
+            apellidoInput.value = nombreCompleto.slice(1).join(' ') || '';
+            photoURLInput.value = user.photoURL || '';
+
+            modal.style.display = 'flex';
+        }
+
+        // Manejar el formulario de editar perfil
+        document.getElementById('editProfileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const nombre = document.getElementById('editNombre').value.trim();
+            const apellido = document.getElementById('editApellido').value.trim();
+            const photoURL = document.getElementById('editPhotoURL').value.trim();
+
+            try {
+                await authService.updateUserProfile({
+                    nombre,
+                    apellido,
+                    photoURL
+                });
+
+                // Actualizar UI
+                const userAvatar = document.getElementById('userAvatar');
+                const userName = document.getElementById('userName');
+
+                if (userAvatar) {
+                    if (photoURL) {
+                        userAvatar.innerHTML = `<img src="${photoURL}" alt="Avatar">`;
+                    } else {
+                        userAvatar.textContent = nombre.charAt(0).toUpperCase();
+                    }
+                }
+
+                if (userName) {
+                    userName.textContent = `${nombre} ${apellido}`.trim();
+                }
+
+                hideModal('editProfileModal');
+                showNotification('Perfil actualizado correctamente');
+            } catch (error) {
+                console.error('Error al actualizar perfil:', error);
+                showNotification('Error al actualizar perfil', 'error');
+            }
+        });
+
+        // Agregar evento para abrir el modal de editar perfil
+        document.querySelector('.user-profile').addEventListener('click', (e) => {
+            if (!e.target.closest('#logoutButton')) {
+                showEditProfileModal();
+            }
+        });
     </script>
 </body>
 </html>

@@ -4,20 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - Scrakk</title>
-    <!-- Parse SDK -->
-    <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
-    <script>
-        // Configuración básica de Parse
-        Parse.initialize("FxPFlAa9QU2yebaTUqbYoCKlflgvoOG2KFe4CrDn");
-        Parse.serverURL = "https://parseapi.back4app.com/";
-        
-        // Configurar el Master Key (solo para pruebas)
-        Parse.masterKey = "4BpYKrkzvWnPWJFco13P8cuWzHeBmFtjvs5hrSjU";
-    </script>
-    <!-- Otros recursos -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <!-- Configuración de Firebase -->
+    <script src="js/firebase-config.js"></script>
     <style>
         :root {
             --color-bg-primary: #0f172a;
@@ -510,6 +505,13 @@
             const strengthIndicator = document.getElementById('strengthIndicator');
             const strengthText = document.getElementById('strengthText');
 
+            // Verificar si hay una sesión activa
+            authService.onAuthStateChanged((user) => {
+                if (user) {
+                    window.location.href = 'dashboard.html';
+                }
+            });
+
             // Password strength validation
             function validatePassword(password) {
                 let strength = 0;
@@ -570,30 +572,7 @@
                 confirmPasswordInput.type = type;
                 this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
             });
-
-            // Registro de usuario
-            async function registrarUsuario(userData) {
-                try {
-                    console.log('Iniciando registro...');
-                    
-                    const user = new Parse.User();
-                    user.set('username', userData.username);
-                    user.set('password', userData.password);
-                    user.set('email', userData.email);
-                    user.set('nombre', userData.nombre);
-                    user.set('apellido', userData.apellido);
-                    user.set('avatar', userData.avatar);
-                    user.set('status', userData.status);
-
-                    const result = await Parse.Cloud.run('registrarUsuario', userData);
-                    console.log('Registro exitoso:', result);
-                    return result;
-                } catch (error) {
-                    console.error('Error en registro:', error);
-                    throw new Error(error.message || 'Error en el registro');
-                }
-            }
-
+            
             // Form submission
             registroForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
@@ -626,22 +605,19 @@
                     errorMessage.style.display = 'block';
                     return;
                 }
-
+                
                 loading.style.display = 'block';
                 submitBtn.disabled = true;
                 
                 try {
                     const userData = {
-                        username: nombre.toLowerCase(),
-                        password: password,
-                        email: email,
-                        nombre: nombre,
-                        apellido: apellido,
-                        avatar: nombre.charAt(0).toUpperCase(),
-                        status: 'offline'
+                        email,
+                        password,
+                        nombre,
+                        apellido
                     };
 
-                    await registrarUsuario(userData);
+                    await authService.registerUser(userData);
                     
                     successMessage.textContent = '¡Registro exitoso! Redirigiendo...';
                     successMessage.style.display = 'block';
@@ -651,7 +627,24 @@
                     }, 1500);
                 } catch (error) {
                     console.error('Error:', error);
-                    errorMessage.textContent = error.message;
+                    let errorMsg = 'Error en el registro';
+                    
+                    switch (error.code) {
+                        case 'auth/email-already-in-use':
+                            errorMsg = 'El email ya está registrado';
+                            break;
+                        case 'auth/invalid-email':
+                            errorMsg = 'Email inválido';
+                            break;
+                        case 'auth/operation-not-allowed':
+                            errorMsg = 'Registro deshabilitado';
+                            break;
+                        case 'auth/weak-password':
+                            errorMsg = 'Contraseña demasiado débil';
+                            break;
+                    }
+                    
+                    errorMessage.textContent = errorMsg;
                     errorMessage.style.display = 'block';
                 } finally {
                     loading.style.display = 'none';

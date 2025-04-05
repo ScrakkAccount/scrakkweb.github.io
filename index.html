@@ -7,11 +7,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script>
-        // Inicializa Parse con las credenciales correctas
-        Parse.initialize("FxPFlAa9QU2yebaTUqbYoCKlflgvoOG2KFe4CrDn", "QvGHsssTwZygtQH3b7UHzUCd292AzmyHnQbSgpg");
-        Parse.serverURL = "https://parseapi.back4app.com/";
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDU_8m_-1RIecI6_EnlzNKWdDH7oXpK2Eg",
+            authDomain: "scrakk.netlify.app",
+            projectId: "scrakk-944d6",
+            storageBucket: "scrakk-944d6.firebasestorage.app",
+            messagingSenderId: "38697916454",
+            appId: "1:38697916454:web:c328dd327a7b69a6d66ee7",
+            measurementId: "G-DL0C7DFEJ4"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
     </script>
     <style>
         body {
@@ -522,8 +535,8 @@
         // Función mejorada para abrir la plataforma
         function abrirPlataforma() {
             try {
-                // Verificar si hay un usuario de Parse activo
-                const currentUser = Parse.User.current();
+                // Verificar si hay un usuario de Firebase activo
+                const currentUser = firebase.auth().currentUser;
                 
                 if (currentUser) {
                     showNotification('Redirigiendo al dashboard...');
@@ -576,10 +589,10 @@
             });
             
             // Comprobar si hay un usuario autenticado
-            const currentUser = Parse.User.current();
+            const currentUser = firebase.auth().currentUser;
             if (currentUser) {
                 // Actualizar enlaces de navegación si el usuario está autenticado
-                updateNavForAuthenticatedUser(currentUser.toJSON());
+                updateNavForAuthenticatedUser(currentUser);
             }
         });
         
@@ -603,7 +616,7 @@
             event.preventDefault();
             
             try {
-                await Parse.User.logOut();
+                await firebase.auth().signOut();
                 showNotification('Sesión cerrada correctamente');
                 window.location.reload();
             } catch (error) {

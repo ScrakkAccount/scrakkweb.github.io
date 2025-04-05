@@ -8,7 +8,12 @@ login.html -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <!-- Configuración de Firebase -->
+    <script src="js/firebase-config.js"></script>
     <style>
         :root {
             --color-bg-primary: #0f172a;
@@ -347,6 +352,58 @@ login.html -->
                 height: 45px;
             }
         }
+
+        .social-login {
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .social-login-divider {
+            display: flex;
+            align-items: center;
+            margin: 1.5rem 0;
+        }
+
+        .social-login-divider::before,
+        .social-login-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--color-border);
+        }
+
+        .social-login-divider span {
+            padding: 0 1rem;
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 12px;
+            background: white;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: #333;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .google-btn:hover {
+            background: #f8f9fa;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .google-btn img {
+            width: 24px;
+            height: 24px;
+        }
     </style>
 </head>
 <body>
@@ -389,6 +446,16 @@ login.html -->
                 </div>
                 <button class="btn-primary" type="submit" id="submitBtn">Acceder</button>
             </form>
+
+            <div class="social-login">
+                <div class="social-login-divider">
+                    <span>O continúa con</span>
+                </div>
+                <button class="google-btn" type="button" id="googleLoginBtn">
+                    <img src="https://www.google.com/favicon.ico" alt="Google logo">
+                    Continuar con Google
+                </button>
+            </div>
         </div>
     </main>
 
@@ -397,10 +464,6 @@ login.html -->
     </footer>
 
     <script>
-        // Inicializa Parse con las credenciales correctas
-        Parse.initialize("FxPFlAa9QU2yebaTUqbYoCKlflgvoOG2KFe4CrDn", "QvGHsssTwZygtQH3b7UHzUCd292AzmyHnQbSgpg");
-        Parse.serverURL = "https://parseapi.back4app.com/";
-
         document.addEventListener('DOMContentLoaded', function() {
             const loginForm = document.getElementById('loginForm');
             const emailInput = document.getElementById('email');
@@ -411,6 +474,13 @@ login.html -->
             const loading = document.getElementById('loading');
             const submitBtn = document.getElementById('submitBtn');
             const rememberMe = document.getElementById('rememberMe');
+
+            // Verificar si hay una sesión activa
+            authService.onAuthStateChanged((user) => {
+                if (user) {
+                    window.location.href = 'dashboard.html';
+                }
+            });
 
             // Toggle password visibility
             togglePassword.addEventListener('click', function() {
@@ -423,72 +493,79 @@ login.html -->
                 }
             });
 
-            // Función para iniciar sesión en Back4App
-            async function iniciarSesion(credentials) {
-                try {
-                    // Primero, buscar el usuario por email
-                    const query = new Parse.Query(Parse.User);
-                    query.equalTo('email', credentials.email);
-                    const user = await query.first();
-                    
-                    if (!user) {
-                        throw new Error('Usuario no encontrado');
-                    }
-
-                    // Iniciar sesión con el username y password
-                    const loggedInUser = await Parse.User.logIn(user.get('username'), credentials.password);
-                    return loggedInUser.toJSON();
-                } catch (error) {
-                    console.error('Error Parse:', error);
-                    if (error.code === 101) {
-                        throw new Error('Correo o contraseña incorrectos');
-                    } else {
-                        throw new Error('Error al iniciar sesión: ' + error.message);
-                    }
-                }
-            }
-
             // Form submission
             loginForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
-                
-                // Clear previous messages
+
                 loginError.style.display = 'none';
                 successMessage.style.display = 'none';
-                
+
                 const email = emailInput.value.trim().toLowerCase();
                 const password = passwordInput.value;
                 const rememberMeChecked = rememberMe.checked;
                 
-                // Show loading
                 loading.style.display = 'block';
                 submitBtn.disabled = true;
-                
-                // Crear objeto de credenciales
-                const credentials = {
-                    email,
-                    password,
-                    rememberMe: rememberMeChecked
-                };
-                
+
                 try {
-                    const userData = await iniciarSesion(credentials);
-                    console.log('Inicio de sesión exitoso:', userData);
+                    await authService.loginUser(email, password);
                     
-                    // Mostrar mensaje de éxito
                     successMessage.textContent = '¡Login exitoso! Redirigiendo...';
                     successMessage.style.display = 'block';
-                    
-                    // Redirigir a confirm-login después de un breve retraso
+
                     setTimeout(() => {
-                        window.location.href = 'confirm-login.html';
+                        window.location.href = 'dashboard.html';
                     }, 1000);
                 } catch (error) {
-                    console.error('Error durante el inicio de sesión:', error);
-                    loginError.textContent = error.message || 'Ocurrió un error. Por favor, intenta de nuevo.';
+                    console.error('Error durante el login:', error);
+                    let errorMsg = 'Error al iniciar sesión';
+                    
+                    switch (error.code) {
+                        case 'auth/user-not-found':
+                        case 'auth/wrong-password':
+                            errorMsg = 'Email o contraseña incorrectos';
+                            break;
+                        case 'auth/invalid-email':
+                            errorMsg = 'Email inválido';
+                            break;
+                        case 'auth/user-disabled':
+                            errorMsg = 'Usuario deshabilitado';
+                            break;
+                        case 'auth/too-many-requests':
+                            errorMsg = 'Demasiados intentos fallidos. Intenta más tarde';
+                            break;
+                    }
+                    
+                    loginError.textContent = errorMsg;
                     loginError.style.display = 'block';
+                } finally {
                     loading.style.display = 'none';
                     submitBtn.disabled = false;
+                }
+            });
+
+            // Google login
+            const googleLoginBtn = document.getElementById('googleLoginBtn');
+            googleLoginBtn.addEventListener('click', async () => {
+                try {
+                    loading.style.display = 'block';
+                    googleLoginBtn.disabled = true;
+                    
+                    await authService.loginWithGoogle();
+                    
+                    successMessage.textContent = '¡Login exitoso! Redirigiendo...';
+                    successMessage.style.display = 'block';
+
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1000);
+                } catch (error) {
+                    console.error('Error al iniciar sesión con Google:', error);
+                    loginError.textContent = 'Error al iniciar sesión con Google';
+                    loginError.style.display = 'block';
+                } finally {
+                    loading.style.display = 'none';
+                    googleLoginBtn.disabled = false;
                 }
             });
         });
