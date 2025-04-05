@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrakk - Nueva Plataforma de Comunicación</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
+    <script>
+        // Inicializa Parse con tus credenciales
+        Parse.initialize("FxPFlAa9QU2yebaTUqbYoCKlflgvoOG2KFe4CrDn", "Sh95XlcUBD1UPsSmSnZnEaSQhHJU60TWRXxNXmOo");
+        Parse.serverURL = "https://parseapi.back4app.com/";
+    </script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a, #1e3a8a);
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+        }
+
+        nav {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 1200px;
+            padding: 1.2rem 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            transition: transform 0.3s ease;
+        }
+
+        .logo-img {
+            height: 40px;
+            transition: transform 0.3s ease;
+        }
+
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #60a5fa;
+            letter-spacing: 1.5px;
+            text-shadow: 0 0 15px rgba(96, 165, 250, 0.4);
+        }
+
+        .logo:hover {
+            transform: scale(1.02);
+        }
+
+        .logo:hover .logo-img {
+            transform: rotate(-15deg);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 0.7rem 1.3rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            background: rgba(59, 130, 246, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-links a[href="registro.html"] {
+            background: #3b82f6;
+            margin-left: 1rem;
+        }
+
+        .main-content {
+            margin-top: 150px;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .hero-section {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 3rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(96, 165, 250, 0.1));
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            color: #60a5fa;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .description {
+            font-size: 1.2rem;
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .button-container {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .download-btn {
+            padding: 1.2rem 3rem;
+            font-size: 1.3rem;
+            background: #3b82f6;
+            border: none;
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 1rem;
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .download-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .download-btn:hover::after {
+            transform: translateX(100%);
+        }
+
+        .open-btn {
+            background: #10b981;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: #2563eb;
+        }
+
+        .open-btn:hover {
+            background: #059669;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            padding: 4rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 15px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s ease;
+            min-height: 200px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(96, 165, 250, 0.1));
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .feature-card:hover::before {
+            transform: translateX(0);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .feature-card h3 {
+            color: #60a5fa;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+            position: relative;
+        }
+
+        .feature-card p {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+            position: relative;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            margin-top: auto;
+            backdrop-filter: blur(5px);
+        }
+
+        /* Nuevos estilos para las mejoras */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+            transform: translateY(150%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .notification.show {
+            transform: translateY(0);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            padding: 2rem;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close-modal:hover {
+            color: #60a5fa;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .offline-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #ef4444;
+            color: white;
+            text-align: center;
+            padding: 0.5rem;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+            z-index: 1002;
+        }
+
+        .offline-indicator.show {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                top: 10px;
+                width: 95%;
+                padding: 1rem;
+            }
+            
+            .logo-img {
+                height: 35px;
+            }
+            
+            .logo-text {
+                font-size: 1.4rem;
+            }
+            
+            .nav-links {
+                gap: 0.8rem;
+            }
+            
+            .nav-links a {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+            
+            .main-content {
+                margin-top: 120px;
+                padding: 2rem 1rem;
+            }
+            
+            .hero-section {
+                padding: 2rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+                padding: 2rem 1rem;
+            }
+
+            .download-btn {
+                min-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo-text {
+                display: none;
+            }
+            
+            .logo-img {
+                height: 45px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-indicator">
+        No hay conexión a internet. Algunas funciones pueden no estar disponibles.
+    </div>
+
+    <nav>
+        <a href="index.html" class="logo">
+            <img src="logo.png" alt="Scrakk Logo" class="logo-img">
+            <span class="logo-text">Scrakk</span>
+        </a>
+        <div class="nav-links">
+            <a href="soporte.html">Soporte</a>
+            <a href="login.html">Iniciar Sesión</a>
+            <a href="registro.html">Registrarse</a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="hero-section">
+            <h1>La Nueva Era de la Comunicación</h1>
+            <p class="description">
+                Scrakk combina mensajería instantánea, videollamadas de alta calidad y comunidades organizadas en una plataforma unificada. Únete a la beta y sé parte de la revolución.
+            </p>
+            <div class="button-container">
+                <button class="download-btn" onclick="descargarBeta()">Descargar Beta</button>
+                <button class="download-btn open-btn" onclick="abrirPlataforma()">Abrir aquí</button>
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="feature-card">
+                <h3>Chat en Tiempo Real</h3>
+                <p>Mensajería instantánea con cifrado de extremo a extremo y soporte para multimedia</p>
+            </div>
+            <div class="feature-card">
+                <h3>Comunidades Activas</h3>
+                <p>Crea o únete a servidores personalizados con herramientas de moderación avanzadas</p>
+            </div>
+            <div class="feature-card">
+                <h3>Videollamadas HD</h3>
+                <p>Llamadas grupales con hasta 4K de resolución y reducción inteligente de ruido</p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>© 2024 Scrakk Technologies. Todos los derechos reservados.</p>
+    </footer>
+
+    <div class="notification" id="notification">
+        <span id="notificationText"></span>
+    </div>
+
+    <div class="modal" id="betaModal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal()">&times;</button>
+            <h2>Descarga la Beta de Scrakk</h2>
+            <p>Estás a punto de descargar la versión beta de Scrakk.</p>
+            <div class="loading-spinner" id="downloadSpinner"></div>
+            <div id="downloadInfo"></div>
+        </div>
+    </div>
+
+    <script>
+        // Sistema de notificaciones
+        function showNotification(message, duration = 3000) {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            notificationText.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
+        }
+
+        // Función de descarga mejorada
+        function descargarBeta() {
+            const modal = document.getElementById('betaModal');
+            const spinner = document.getElementById('downloadSpinner');
+            const downloadInfo = document.getElementById('downloadInfo');
+            
+            modal.style.display = 'flex';
+            spinner.style.display = 'block';
+            downloadInfo.textContent = 'Preparando la descarga...';
+
+            // Simular proceso de descarga
+            setTimeout(() => {
+                spinner.style.display = 'none';
+                downloadInfo.textContent = '¡Descarga completada!';
+                
+                const link = document.createElement('a');
+                link.href = '#'; // Aquí iría la URL real de descarga
+                link.download = 'ScrakkBeta.exe';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                setTimeout(() => {
+                    closeModal();
+                    showNotification('¡Gracias por descargar Scrakk Beta!');
+                }, 2000);
+            }, 3000);
+        }
+
+        function closeModal() {
+            document.getElementById('betaModal').style.display = 'none';
+        }
+
+        // Función mejorada para abrir la plataforma
+        function abrirPlataforma() {
+            try {
+                // Verificar si hay un usuario de Parse activo
+                const currentUser = Parse.User.current();
+                
+                if (currentUser) {
+                    showNotification('Redirigiendo al dashboard...');
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1000);
+                } else {
+                    solicitarLogin();
+                }
+            } catch (error) {
+                console.error('Error al verificar sesión:', error);
+                solicitarLogin();
+            }
+        }
+        
+        function solicitarLogin() {
+            const confirmar = confirm('Debes iniciar sesión o registrarte primero. ¿Quieres ir a la página de inicio de sesión?');
+            if (confirmar) {
+                showNotification('Redirigiendo a login...');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 1000);
+            }
+        }
+
+        // Detección de conexión
+        window.addEventListener('offline', () => {
+            document.querySelector('.offline-indicator').classList.add('show');
+            showNotification('¡Estás offline! Algunas funciones pueden no estar disponibles.', 5000);
+        });
+
+        window.addEventListener('online', () => {
+            document.querySelector('.offline-indicator').classList.remove('show');
+            showNotification('¡Conexión restaurada!', 3000);
+        });
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            // Verificar estado inicial de conexión
+            if (!navigator.onLine) {
+                document.querySelector('.offline-indicator').classList.add('show');
+            }
+
+            // Animación de carga para imágenes
+            const images = document.querySelectorAll('img');
+            images.forEach(img => {
+                img.addEventListener('load', () => {
+                    img.style.animation = 'fadeIn 0.5s ease';
+                });
+            });
+            
+            // Comprobar si hay un usuario autenticado
+            const currentUser = Parse.User.current();
+            if (currentUser) {
+                // Actualizar enlaces de navegación si el usuario está autenticado
+                updateNavForAuthenticatedUser(currentUser.toJSON());
+            }
+        });
+        
+        // Actualizar la navegación para un usuario autenticado
+        function updateNavForAuthenticatedUser(user) {
+            const navLinks = document.querySelector('.nav-links');
+            
+            // Limpiar enlaces existentes
+            navLinks.innerHTML = '';
+            
+            // Añadir nuevos enlaces
+            navLinks.innerHTML += `
+                <a href="soporte.html">Soporte</a>
+                <a href="dashboard.html">Dashboard</a>
+                <a href="#" onclick="cerrarSesion(event)">Cerrar Sesión</a>
+            `;
+        }
+        
+        // Función para cerrar sesión
+        async function cerrarSesion(event) {
+            event.preventDefault();
+            
+            try {
+                await Parse.User.logOut();
+                showNotification('Sesión cerrada correctamente');
+                window.location.reload();
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                window.location.reload();
+            }
+        }
+    </script>
+</body>
+</html>

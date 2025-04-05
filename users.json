@@ -1,0 +1,15 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "nombre": "Admin",
+      "apellido": "Sistema",
+      "email": "admin@scrakk.com",
+      "password": "admin123",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "avatar": "A",
+      "status": "online"
+    }
+  ]
+}
+
