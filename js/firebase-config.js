@@ -1,9 +1,9 @@
 // Configuración de Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyDU_8m_-1RIecI6_EnlzNKWdDH7oXpK2Eg",
-    authDomain: "scrakk.netlify.app",
+    authDomain: "scrakk-944d6.firebaseapp.com",
     projectId: "scrakk-944d6",
-    storageBucket: "scrakk-944d6.firebasestorage.app",
+    storageBucket: "scrakk-944d6.appspot.com",
     messagingSenderId: "38697916454",
     appId: "1:38697916454:web:c328dd327a7b69a6d66ee7",
     measurementId: "G-DL0C7DFEJ4"
@@ -17,36 +17,18 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 
+// Configurar el comportamiento del proveedor de Google
+googleProvider.setCustomParameters({
+    prompt: 'select_account'
+});
+
 // Funciones de autenticación
 const authService = {
     // Inicio de sesión con Google
     async loginWithGoogle() {
         try {
-            const result = await auth.signInWithPopup(googleProvider);
-            const user = result.user;
-            
-            // Verificar si el usuario ya existe en Firestore
-            const userDoc = await db.collection('users').doc(user.uid).get();
-            
-            if (!userDoc.exists) {
-                // Si es un usuario nuevo, guardar datos en Firestore
-                await db.collection('users').doc(user.uid).set({
-                    email: user.email,
-                    nombre: user.displayName.split(' ')[0] || '',
-                    apellido: user.displayName.split(' ').slice(1).join(' ') || '',
-                    avatar: user.photoURL || user.displayName.charAt(0).toUpperCase(),
-                    status: 'online',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            } else {
-                // Si el usuario ya existe, actualizar su estado
-                await db.collection('users').doc(user.uid).update({
-                    status: 'online',
-                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            }
-
-            return user;
+            // Usar signInWithRedirect en lugar de signInWithPopup
+            await auth.signInWithRedirect(googleProvider);
         } catch (error) {
             console.error('Error en login con Google:', error);
             throw error;
@@ -155,6 +137,43 @@ const authService = {
         return auth.onAuthStateChanged(callback);
     }
 };
+
+// Manejar el resultado de la redirección
+auth.getRedirectResult().then(async (result) => {
+    if (result.user) {
+        const user = result.user;
+        
+        try {
+            // Verificar si el usuario ya existe en Firestore
+            const userDoc = await db.collection('users').doc(user.uid).get();
+            
+            if (!userDoc.exists) {
+                // Si es un usuario nuevo, guardar datos en Firestore
+                await db.collection('users').doc(user.uid).set({
+                    email: user.email,
+                    nombre: user.displayName.split(' ')[0] || '',
+                    apellido: user.displayName.split(' ').slice(1).join(' ') || '',
+                    avatar: user.photoURL || user.displayName.charAt(0).toUpperCase(),
+                    status: 'online',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } else {
+                // Si el usuario ya existe, actualizar su estado
+                await db.collection('users').doc(user.uid).update({
+                    status: 'online',
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+
+            // Redirigir al dashboard
+            window.location.href = '/dashboard.html';
+        } catch (error) {
+            console.error('Error al procesar el login:', error);
+        }
+    }
+}).catch((error) => {
+    console.error('Error en redirección:', error);
+});
 
 // Exportar el servicio de autenticación
 window.authService = authService; 

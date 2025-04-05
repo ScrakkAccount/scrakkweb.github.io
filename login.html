@@ -511,10 +511,10 @@ login.html -->
                     await authService.loginUser(email, password);
                     
                     successMessage.textContent = '¡Login exitoso! Redirigiendo...';
-                    successMessage.style.display = 'block';
+                            successMessage.style.display = 'block';
 
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
+                            setTimeout(() => {
+                                window.location.href = 'dashboard.html';
                     }, 1000);
                 } catch (error) {
                     console.error('Error durante el login:', error);
@@ -537,11 +537,11 @@ login.html -->
                     }
                     
                     loginError.textContent = errorMsg;
-                    loginError.style.display = 'block';
-                } finally {
-                    loading.style.display = 'none';
-                    submitBtn.disabled = false;
-                }
+                        loginError.style.display = 'block';
+                    } finally {
+                        loading.style.display = 'none';
+                        submitBtn.disabled = false;
+                    }
             });
 
             // Google login
@@ -557,7 +557,7 @@ login.html -->
                     successMessage.style.display = 'block';
 
                     setTimeout(() => {
-                        window.location.href = 'dashboard.html';
+                window.location.href = 'dashboard.html';
                     }, 1000);
                 } catch (error) {
                     console.error('Error al iniciar sesión con Google:', error);

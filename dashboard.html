@@ -2449,27 +2449,68 @@
             const messagesContainer = document.querySelector('.chat-messages');
             messagesContainer.innerHTML = '';
             
+            // Cargar mensajes locales primero
             if (channel.messages && channel.messages.length > 0) {
                 channel.messages.forEach(message => {
-                    const messageElement = document.createElement('div');
-                    messageElement.className = 'message';
-                    messageElement.innerHTML = `
-                        <div class="message-avatar">
-                            ${message.userAvatar ? 
-                              `<img src="${message.userAvatar}" alt="${message.userName}">` : 
-                              `<i class="fas fa-user"></i>`}
-                        </div>
-                        <div class="message-content">
-                            <div class="message-header">
-                                <div class="message-author">${message.userName}</div>
-                                <div class="message-time">${new Date(message.timestamp).toLocaleString()}</div>
-                            </div>
-                            <div class="message-text">${message.content}</div>
-                        </div>
-                    `;
-                    messagesContainer.appendChild(messageElement);
+                    addMessageToUI(message);
                 });
             }
+            
+            // Suscribirse a nuevos mensajes en Firestore
+            if (currentServer && channel.name) {
+                // Cancelar suscripción anterior si existe
+                if (window.messageListener) {
+                    window.messageListener();
+                }
+                
+                // Crear nueva suscripción
+                window.messageListener = firebase.firestore()
+                    .collection('messages')
+                    .where('serverId', '==', currentServer.id)
+                    .where('channelName', '==', channel.name)
+                    .orderBy('timestamp', 'desc')
+                    .limit(50)
+                    .onSnapshot(snapshot => {
+                        snapshot.docChanges().forEach(change => {
+                            if (change.type === 'added') {
+                                const message = change.doc.data();
+                                // Verificar si el mensaje ya está en la UI
+                                const existingMessage = document.querySelector(`[data-message-id="${message.id}"]`);
+                                if (!existingMessage) {
+                                    addMessageToUI(message);
+                                }
+                            }
+                        });
+                    }, error => {
+                        console.error('Error al escuchar mensajes:', error);
+                    });
+            }
+        }
+        
+        // Función auxiliar para agregar un mensaje a la UI
+        function addMessageToUI(message) {
+            const messagesContainer = document.querySelector('.chat-messages');
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message';
+            messageElement.dataset.messageId = message.id;
+            messageElement.innerHTML = `
+                <div class="message-avatar">
+                    ${message.userAvatar ? 
+                      `<img src="${message.userAvatar}" alt="${message.userName}">` : 
+                      `<i class="fas fa-user"></i>`}
+                </div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <div class="message-author">${message.userName}</div>
+                        <div class="message-time">${new Date(message.timestamp).toLocaleString()}</div>
+                    </div>
+                    <div class="message-text">${message.content}</div>
+                </div>
+            `;
+            messagesContainer.appendChild(messageElement);
+            
+            // Desplazar al último mensaje
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
         // Manejar guardado de configuración de usuario
@@ -2981,17 +3022,16 @@
                 
                 if (server.icon) {
                     serverElement.innerHTML = `<img src="${server.icon}" alt="${server.name}">`;
-                    serverElement.dataset.serverIcon = server.icon;
                 } else {
-                    serverElement.innerHTML = `<i class="fas fa-hashtag"></i>`;
+                    serverElement.textContent = server.name.charAt(0).toUpperCase();
                 }
                 
-                // Agregar evento de clic al servidor
+                // Agregar event listener para seleccionar el servidor
                 serverElement.addEventListener('click', function() {
                     selectServer(this);
                 });
                 
-                // Agregar evento de clic derecho al servidor
+                // Agregar event listener para el menú contextual
                 serverElement.addEventListener('contextmenu', function(e) {
                     e.preventDefault();
                     showContextMenu(e, this);
@@ -3017,29 +3057,30 @@
                             userId: currentUser.id,
                             userName: currentUser.nombre,
                             userAvatar: currentUser.avatar,
-                            timestamp: new Date().toISOString()
+                            timestamp: new Date().toISOString(),
+                            serverId: currentServer.id,
+                            channelName: currentChannel
                         };
                         
-                        // Encontrar y actualizar el canal actual
-                        const channelIndex = currentServer.channels.findIndex(c => c.name === currentChannel);
-                        if (channelIndex !== -1) {
-                            if (!currentServer.channels[channelIndex].messages) {
-                                currentServer.channels[channelIndex].messages = [];
-                            }
-                            currentServer.channels[channelIndex].messages.push(message);
+                        try {
+                            // Guardar mensaje en Firestore
+                            await firebase.firestore().collection('messages').add(message);
                             
-                            // Actualizar en archivo
-                            const servers = await loadData('servers.json') || [];
-                            const serverIndex = servers.findIndex(s => s.id === currentServer.id);
-                            if (serverIndex !== -1) {
-                                servers[serverIndex] = currentServer;
-                                await saveData('servers.json', servers);
-                                await saveData('current-server.json', currentServer);
-                                
-                                // Actualizar la vista
+                            // Limpiar el campo de entrada
+                            this.value = '';
+                            
+                            // Actualizar la vista localmente
+                            const channelIndex = currentServer.channels.findIndex(c => c.name === currentChannel);
+                            if (channelIndex !== -1) {
+                                if (!currentServer.channels[channelIndex].messages) {
+                                    currentServer.channels[channelIndex].messages = [];
+                                }
+                                currentServer.channels[channelIndex].messages.push(message);
                                 loadChannelMessages(currentServer.channels[channelIndex]);
-                                this.value = '';
                             }
+                        } catch (error) {
+                            console.error('Error al enviar mensaje:', error);
+                            showNotification('Error al enviar mensaje', 'error');
                         }
                     }
                 }
@@ -3075,15 +3116,31 @@
             const photoURL = document.getElementById('editPhotoURL').value.trim();
 
             try {
+                // Mostrar indicador de carga
+                const submitButton = e.target.querySelector('button[type="submit"]');
+                const originalText = submitButton.textContent;
+                submitButton.disabled = true;
+                submitButton.textContent = 'Guardando...';
+                
+                // Actualizar perfil en Firebase
                 await authService.updateUserProfile({
                     nombre,
                     apellido,
                     photoURL
                 });
+                
+                // Actualizar datos locales
+                const currentUser = await loadData('current-user.json');
+                if (currentUser) {
+                    currentUser.nombre = nombre;
+                    currentUser.apellido = apellido;
+                    if (photoURL) currentUser.avatar = photoURL;
+                    await saveData('current-user.json', currentUser);
+                }
 
                 // Actualizar UI
-                const userAvatar = document.getElementById('userAvatar');
-                const userName = document.getElementById('userName');
+                const userAvatar = document.querySelector('.user-avatar');
+                const userName = document.querySelector('.user-name');
 
                 if (userAvatar) {
                     if (photoURL) {
@@ -3101,7 +3158,12 @@
                 showNotification('Perfil actualizado correctamente');
             } catch (error) {
                 console.error('Error al actualizar perfil:', error);
-                showNotification('Error al actualizar perfil', 'error');
+                showNotification('Error al actualizar perfil: ' + error.message, 'error');
+            } finally {
+                // Restaurar botón
+                const submitButton = e.target.querySelector('button[type="submit"]');
+                submitButton.disabled = false;
+                submitButton.textContent = 'Guardar Cambios';
             }
         });
 
