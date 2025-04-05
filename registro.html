@@ -582,35 +582,47 @@
             // Función para registrar usuario en Back4App
             async function registrarUsuario(userData) {
                 try {
+                    console.log('Iniciando registro de usuario:', userData.email);
+                    
+                    // Crear un nuevo usuario de Parse
                     const user = new Parse.User();
                     
-                    // Configurar campos obligatorios
-                    user.set("username", userData.nombre.toLowerCase()); // Usamos el nombre como username
+                    // Configurar campos requeridos
+                    user.set("username", userData.nombre.toLowerCase());
                     user.set("password", userData.password);
                     user.set("email", userData.email);
                     
-                    // Campos personalizados
+                    // Configurar campos personalizados
                     user.set("nombre", userData.nombre);
                     user.set("apellido", userData.apellido);
                     user.set("avatar", userData.avatar);
                     user.set("status", userData.status);
+
+                    console.log('Intentando registro con Parse...');
                     
                     // Intentar el registro
                     const result = await user.signUp();
                     console.log('Usuario registrado exitosamente:', result);
                     return result.toJSON();
+                    
                 } catch (error) {
-                    console.error('Error en registro Parse:', error);
-                    if (error.code === 202) {
-                        throw new Error('Este nombre de usuario ya está registrado');
-                    } else if (error.code === 203) {
-                        throw new Error('Este correo ya está registrado');
-                    } else if (error.code === 125) {
-                        throw new Error('El correo electrónico no es válido');
-                    } else if (error.code === 201) {
-                        throw new Error('La contraseña es requerida');
-                    } else {
-                        throw new Error('Error en el registro: ' + error.message);
+                    console.error('Error completo en registro Parse:', error);
+                    
+                    // Manejar errores específicos
+                    switch(error.code) {
+                        case 202:
+                            throw new Error('Este nombre de usuario ya está registrado');
+                        case 203:
+                            throw new Error('Este correo ya está registrado');
+                        case 125:
+                            throw new Error('El correo electrónico no es válido');
+                        case 201:
+                            throw new Error('La contraseña es requerida');
+                        case 119:
+                        case 100:
+                            throw new Error('Error de permisos. Por favor, contacta al administrador');
+                        default:
+                            throw new Error('Error en el registro: ' + error.message);
                     }
                 }
             }
