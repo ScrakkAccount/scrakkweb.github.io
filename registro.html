@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
     <script>
-        // Inicializa Parse con tus credenciales
-        Parse.initialize("FxPFlAa9QU2yebaTUqbYoCKlflgvoOG2KFe4CrDn", "Sh95XlcUBD1UPsSmSnZnEaSQhHJU60TWRXxNXmOo");
+        // Inicializa Parse con las credenciales correctas
+        Parse.initialize("FxPFlAa9QU2yebaTUqbYoCKlflgvoOG2KFe4CrDn", "QvGHsssTwZygtQH3b7UHzUCd292AzmyHnQbSgpg");
         Parse.serverURL = "https://parseapi.back4app.com/";
     </script>
     <style>
@@ -581,28 +581,34 @@
 
             // Función para registrar usuario en Back4App
             async function registrarUsuario(userData) {
-                const user = new Parse.User();
-                
-                // Configurar campos obligatorios
-                user.set("username", userData.email);
-                user.set("password", userData.password);
-                user.set("email", userData.email);
-                
-                // Campos personalizados
-                user.set("nombre", userData.nombre);
-                user.set("apellido", userData.apellido);
-                user.set("avatar", userData.avatar);
-                user.set("status", userData.status);
-                
                 try {
-                    await user.signUp();
-                    return user.toJSON();
+                    const user = new Parse.User();
+                    
+                    // Configurar campos obligatorios
+                    user.set("username", userData.nombre.toLowerCase()); // Usamos el nombre como username
+                    user.set("password", userData.password);
+                    user.set("email", userData.email);
+                    
+                    // Campos personalizados
+                    user.set("nombre", userData.nombre);
+                    user.set("apellido", userData.apellido);
+                    user.set("avatar", userData.avatar);
+                    user.set("status", userData.status);
+                    
+                    // Intentar el registro
+                    const result = await user.signUp();
+                    console.log('Usuario registrado exitosamente:', result);
+                    return result.toJSON();
                 } catch (error) {
-                    console.error('Error Back4App:', error);
+                    console.error('Error en registro Parse:', error);
                     if (error.code === 202) {
+                        throw new Error('Este nombre de usuario ya está registrado');
+                    } else if (error.code === 203) {
                         throw new Error('Este correo ya está registrado');
                     } else if (error.code === 125) {
-                        throw new Error('Email inválido');
+                        throw new Error('El correo electrónico no es válido');
+                    } else if (error.code === 201) {
+                        throw new Error('La contraseña es requerida');
                     } else {
                         throw new Error('Error en el registro: ' + error.message);
                     }
@@ -648,17 +654,17 @@
                 loading.style.display = 'block';
                 submitBtn.disabled = true;
                 
-                // Crear nuevo usuario
-                const nuevoUsuario = {
-                    nombre,
-                    apellido,
-                    email,
-                    password,
-                    avatar: nombre.charAt(0).toUpperCase(),
-                    status: 'offline'
-                };
-                
                 try {
+                    // Crear nuevo usuario
+                    const nuevoUsuario = {
+                        nombre,
+                        apellido,
+                        email,
+                        password,
+                        avatar: nombre.charAt(0).toUpperCase(),
+                        status: 'offline'
+                    };
+                    
                     const response = await registrarUsuario(nuevoUsuario);
                     console.log('Usuario registrado:', response);
                     
