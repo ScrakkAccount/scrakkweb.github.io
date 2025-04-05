@@ -510,49 +510,87 @@
             const strengthIndicator = document.getElementById('strengthIndicator');
             const strengthText = document.getElementById('strengthText');
 
-            // Función para registrar usuario en Back4App
+            // Password strength validation
+            function validatePassword(password) {
+                let strength = 0;
+                let feedback = [];
+
+                if (password.length >= 8) strength++;
+                else feedback.push('Al menos 8 caracteres');
+
+                if (/[A-Z]/.test(password)) strength++;
+                else feedback.push('Al menos una mayúscula');
+
+                if (/[a-z]/.test(password)) strength++;
+                else feedback.push('Al menos una minúscula');
+
+                if (/[0-9]/.test(password)) strength++;
+                else feedback.push('Al menos un número');
+
+                if (/[^A-Za-z0-9]/.test(password)) strength++;
+                else feedback.push('Al menos un carácter especial');
+
+                return { strength, feedback };
+            }
+
+            // Password strength indicator
+            passwordInput.addEventListener('input', function() {
+                const { strength, feedback } = validatePassword(this.value);
+                
+                strengthIndicator.className = 'strength-indicator';
+                if (strength > 0) strengthIndicator.classList.add(`strength-${strength}`);
+                
+                if (strength === 0) {
+                    strengthText.textContent = 'Muy débil';
+                    strengthText.className = 'strength-text weak';
+                } else if (strength <= 2) {
+                    strengthText.textContent = 'Débil';
+                    strengthText.className = 'strength-text weak';
+                } else if (strength <= 3) {
+                    strengthText.textContent = 'Media';
+                    strengthText.className = 'strength-text medium';
+                } else if (strength <= 4) {
+                    strengthText.textContent = 'Fuerte';
+                    strengthText.className = 'strength-text strong';
+                } else {
+                    strengthText.textContent = 'Muy fuerte';
+                    strengthText.className = 'strength-text very-strong';
+                }
+            });
+
+            // Toggle password visibility
+            togglePassword.addEventListener('click', function() {
+                const type = passwordInput.type === 'password' ? 'text' : 'password';
+                passwordInput.type = type;
+                this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+            });
+
+            toggleConfirmPassword.addEventListener('click', function() {
+                const type = confirmPasswordInput.type === 'password' ? 'text' : 'password';
+                confirmPasswordInput.type = type;
+                this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+            });
+
+            // Registro de usuario
             async function registrarUsuario(userData) {
                 try {
-                    console.log('Iniciando registro de usuario:', userData);
+                    console.log('Iniciando registro...');
                     
-                    // Intentar registro directo con REST API
-                    const response = await fetch('https://parseapi.back4app.com/users', {
-                        method: 'POST',
-                        headers: {
-                            'X-Parse-Application-Id': 'FxPFlAa9QU2yebaTUqbYoCKlflgvoOG2KFe4CrDn',
-                            'X-Parse-Master-Key': '4BpYKrkzvWnPWJFco13P8cuWzHeBmFtjvs5hrSjU',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            username: userData.username,
-                            password: userData.password,
-                            email: userData.email,
-                            nombre: userData.nombre,
-                            apellido: userData.apellido,
-                            avatar: userData.avatar,
-                            status: userData.status,
-                            ACL: {
-                                "*": {
-                                    "read": true,
-                                    "write": true
-                                }
-                            }
-                        })
-                    });
+                    const user = new Parse.User();
+                    user.set('username', userData.username);
+                    user.set('password', userData.password);
+                    user.set('email', userData.email);
+                    user.set('nombre', userData.nombre);
+                    user.set('apellido', userData.apellido);
+                    user.set('avatar', userData.avatar);
+                    user.set('status', userData.status);
 
-                    const responseData = await response.json();
-                    console.log('Respuesta completa:', responseData);
-
-                    if (!response.ok) {
-                        throw new Error(responseData.error || 'Error en el registro');
-                    }
-
-                    console.log('Registro exitoso:', responseData);
-                    return responseData;
-                    
+                    const result = await Parse.Cloud.run('registrarUsuario', userData);
+                    console.log('Registro exitoso:', result);
+                    return result;
                 } catch (error) {
-                    console.error('Error detallado:', error);
-                    throw error;
+                    console.error('Error en registro:', error);
+                    throw new Error(error.message || 'Error en el registro');
                 }
             }
 
@@ -560,7 +598,6 @@
             registroForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
-                // Limpiar mensajes previos
                 errorMessage.style.display = 'none';
                 successMessage.style.display = 'none';
                 
@@ -570,7 +607,7 @@
                 const password = passwordInput.value;
                 const confirmPassword = confirmPasswordInput.value;
                 
-                // Validaciones básicas
+                // Validaciones
                 if (!nombre || !email || !password || !confirmPassword) {
                     errorMessage.textContent = 'Por favor, completa todos los campos obligatorios';
                     errorMessage.style.display = 'block';
@@ -583,7 +620,13 @@
                     return;
                 }
 
-                // Mostrar loading
+                const { strength, feedback } = validatePassword(password);
+                if (strength < 3) {
+                    errorMessage.textContent = `Contraseña débil: ${feedback.join(', ')}`;
+                    errorMessage.style.display = 'block';
+                    return;
+                }
+
                 loading.style.display = 'block';
                 submitBtn.disabled = true;
                 
@@ -598,8 +641,7 @@
                         status: 'offline'
                     };
 
-                    const result = await registrarUsuario(userData);
-                    console.log('Usuario creado:', result);
+                    await registrarUsuario(userData);
                     
                     successMessage.textContent = '¡Registro exitoso! Redirigiendo...';
                     successMessage.style.display = 'block';
@@ -615,19 +657,6 @@
                     loading.style.display = 'none';
                     submitBtn.disabled = false;
                 }
-            });
-
-            // Password visibility toggles
-            togglePassword.addEventListener('click', function() {
-                const type = passwordInput.type === 'password' ? 'text' : 'password';
-                passwordInput.type = type;
-                togglePassword.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
-            });
-
-            toggleConfirmPassword.addEventListener('click', function() {
-                const type = confirmPasswordInput.type === 'password' ? 'text' : 'password';
-                confirmPasswordInput.type = type;
-                toggleConfirmPassword.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
             });
         });
     </script>
