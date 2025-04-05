@@ -7,22 +7,12 @@
     <!-- Parse SDK -->
     <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
     <script>
-        // Configuración de Parse con Client Key
-        Parse.initialize(
-            "FxPFlAa9QU2yebaTUqbYoCKlflgvoOG2KFe4CrDn", // Application ID
-            "Sh95XlzLGBDlUPsSmSnZnEaSQhHJU60TWRXxNXmOo"  // Client Key
-        );
+        // Configuración básica de Parse
+        Parse.initialize("FxPFlAa9QU2yebaTUqbYoCKlflgvoOG2KFe4CrDn");
         Parse.serverURL = "https://parseapi.back4app.com/";
-
-        // Configurar headers por defecto
-        Parse.CoreManager.setRESTController({
-            ajax: function(method, path, data, headers) {
-                headers = headers || {};
-                headers['X-Parse-Application-Id'] = 'FxPFlAa9QU2yebaTUqbYoCKlflgvoOG2KFe4CrDn';
-                headers['X-Parse-Client-Key'] = 'Sh95XlzLGBDlUPsSmSnZnEaSQhHJU60TWRXxNXmOo';
-                return Parse._request(method, path, data, headers);
-            }
-        });
+        
+        // Configurar el Master Key (solo para pruebas)
+        Parse.masterKey = "4BpYKrkzvWnPWJFco13P8cuWzHeBmFtjvs5hrSjU";
     </script>
     <!-- Otros recursos -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
@@ -525,12 +515,12 @@
                 try {
                     console.log('Iniciando registro de usuario:', userData);
                     
-                    // Crear usuario con método directo
+                    // Intentar registro directo con REST API
                     const response = await fetch('https://parseapi.back4app.com/users', {
                         method: 'POST',
                         headers: {
                             'X-Parse-Application-Id': 'FxPFlAa9QU2yebaTUqbYoCKlflgvoOG2KFe4CrDn',
-                            'X-Parse-Client-Key': 'Sh95XlzLGBDlUPsSmSnZnEaSQhHJU60TWRXxNXmOo',
+                            'X-Parse-Master-Key': '4BpYKrkzvWnPWJFco13P8cuWzHeBmFtjvs5hrSjU',
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
@@ -540,23 +530,29 @@
                             nombre: userData.nombre,
                             apellido: userData.apellido,
                             avatar: userData.avatar,
-                            status: userData.status
+                            status: userData.status,
+                            ACL: {
+                                "*": {
+                                    "read": true,
+                                    "write": true
+                                }
+                            }
                         })
                     });
 
+                    const responseData = await response.json();
+                    console.log('Respuesta completa:', responseData);
+
                     if (!response.ok) {
-                        const errorData = await response.json();
-                        console.error('Error response:', errorData);
-                        throw new Error(errorData.error || 'Error en el registro');
+                        throw new Error(responseData.error || 'Error en el registro');
                     }
 
-                    const result = await response.json();
-                    console.log('Registro exitoso:', result);
-                    return result;
+                    console.log('Registro exitoso:', responseData);
+                    return responseData;
                     
                 } catch (error) {
-                    console.error('Error completo:', error);
-                    throw new Error(error.message || 'Error en el registro');
+                    console.error('Error detallado:', error);
+                    throw error;
                 }
             }
 
@@ -593,7 +589,7 @@
                 
                 try {
                     const userData = {
-                        username: nombre.toLowerCase(), // username es requerido por Parse
+                        username: nombre.toLowerCase(),
                         password: password,
                         email: email,
                         nombre: nombre,
@@ -602,8 +598,8 @@
                         status: 'offline'
                     };
 
-                    const user = await registrarUsuario(userData);
-                    console.log('Usuario creado:', user);
+                    const result = await registrarUsuario(userData);
+                    console.log('Usuario creado:', result);
                     
                     successMessage.textContent = '¡Registro exitoso! Redirigiendo...';
                     successMessage.style.display = 'block';
@@ -615,6 +611,7 @@
                     console.error('Error:', error);
                     errorMessage.textContent = error.message;
                     errorMessage.style.display = 'block';
+                } finally {
                     loading.style.display = 'none';
                     submitBtn.disabled = false;
                 }
